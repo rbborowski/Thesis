@@ -13,10 +13,6 @@ from pathlib import Path
 # Repository root (this file is at <root>/src/fashion_retrieval/config.py)
 ROOT = Path(__file__).resolve().parents[2]
 
-# ---------------------------------------------------------------------------
-# Catalog schema (H&M Personalized Fashion Recommendations, articles.csv)
-# ---------------------------------------------------------------------------
-
 #: Column holding the free-text product description used for semantic ranking.
 DESCRIPTION_COLUMN = "detail_desc"
 
