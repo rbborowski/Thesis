@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fashion-hybrid-retrieval"
+version = "0.1.0"
+description = "Hybrid retrieval for fashion e-commerce search: semantic similarity + LLM-based query understanding"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+full = [
+    "sentence-transformers>=2.2",
+    "pyarrow>=14.0",
+]
+# Only for the "transformers" LLM backend; the "ollama" backend needs no
+# python package at all.
+local-llm = [
+    "transformers>=4.44",
+    "torch>=2.2",
+    "accelerate>=0.33",
+]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+fashion-retrieval = "fashion_retrieval.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

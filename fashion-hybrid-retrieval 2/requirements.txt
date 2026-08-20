@@ -1,0 +1,4 @@
+# Minimal set: enough to run the whole pipeline offline
+# (hashing embedder + mock LLM).
+pandas>=2.0
+numpy>=1.24

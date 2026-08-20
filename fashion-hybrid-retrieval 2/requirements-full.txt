@@ -1,0 +1,19 @@
+-r requirements.txt
+
+# Real experimental configuration. Everything here is free and open source;
+# no paid service, no subscription, no API billing.
+
+sentence-transformers>=2.2   # dense text embeddings, runs locally
+pyarrow>=14.0                # parquet catalog cache
+pytest>=7.4
+ruff>=0.4
+
+# The "ollama" LLM backend needs NO python package: the client uses only the
+# standard library. Install Ollama itself from https://ollama.com (free, open
+# source) and pull a model, e.g. `ollama pull qwen2.5:3b-instruct`.
+
+# Only needed for the "transformers" LLM backend (heavier alternative to
+# Ollama; uncomment if you cannot install Ollama on your machine):
+# transformers>=4.44
+# torch>=2.2
+# accelerate>=0.33

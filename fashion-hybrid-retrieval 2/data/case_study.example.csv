@@ -1,0 +1,7 @@
+query,product_type_name,colour_group_name,index_group_name,notes
+"a black midi dress for a summer wedding",Dress,Black,,"tipo e cor explicitos; estilo no soft intent"
+"a red skirt like the ones from the 90s",Skirt,Red,,"tipo com vizinho proximo no catalogo (dress)"
+"something cosy to wear at home in winter",,,,"nenhuma restricao rigida: os dois sistemas devem coincidir"
+"white cotton shirt for the office",Shirt,White,,"cor + tipo + ocasiao"
+"dark blue trousers for men",Trousers,Dark Blue,Menswear,"tres restricoes simultaneas"
+"a flowy dress that looks like linen but is not white",Dress,,,"restricao negativa: caso dificil, esperado falhar"

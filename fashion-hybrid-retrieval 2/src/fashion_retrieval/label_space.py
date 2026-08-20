@@ -1,0 +1,162 @@
+"""Label-space analysis (Section 4.2 of the monograph).
+
+Before either system can be implemented, the catalog's metadata fields must be
+characterised: how many distinct values each one takes in practice, how those
+values are distributed, and therefore whether the field can serve as a hard
+filter whose closed vocabulary fits inside an LLM prompt.
+
+This module produces both a human-readable report, for the monograph, and the
+machine-readable filter vocabulary consumed by the query parser.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import dataclass, asdict
+from pathlib import Path
+
+import pandas as pd
+
+from .config import CANDIDATE_FILTER_FIELDS, Config
+
+log = logging.getLogger(__name__)
+
+
+@dataclass
+class FieldStats:
+    """Summary of a single candidate filter field."""
+
+    field: str
+    n_distinct: int
+    n_distinct_frequent: int
+    coverage: float          # fraction of articles with a non-null value
+    top_values: list[tuple[str, int]]
+    usable_as_filter: bool
+    reason: str
+
+
+def analyse_field(
+    df: pd.DataFrame, field: str, cfg: Config, top_n: int = 10
+) -> FieldStats:
+    """Compute the statistics that decide whether a field can be a hard filter."""
+    series = df[field].dropna().astype(str).str.strip()
+    counts = series.value_counts()
+    frequent = counts[counts >= cfg.min_value_frequency]
+
+    coverage = len(series) / len(df) if len(df) else 0.0
+    n_distinct = int(counts.size)
+    n_distinct_frequent = int(frequent.size)
+
+    usable = True
+    reason = "cardinality and coverage within limits"
+    if n_distinct_frequent > cfg.max_filter_cardinality:
+        usable = False
+        reason = (
+            f"{n_distinct_frequent} frequent values exceed the "
+            f"max_filter_cardinality of {cfg.max_filter_cardinality}; the "
+            "closed vocabulary would not fit comfortably in a prompt"
+        )
+    elif coverage < 0.9:
+        usable = False
+        reason = (
+            f"coverage of {coverage:.1%} is too low; filtering on this field "
+            "would discard articles merely for having missing metadata"
+        )
+
+    return FieldStats(
+        field=field,
+        n_distinct=n_distinct,
+        n_distinct_frequent=n_distinct_frequent,
+        coverage=round(coverage, 4),
+        top_values=[(str(v), int(c)) for v, c in counts.head(top_n).items()],
+        usable_as_filter=usable,
+        reason=reason,
+    )
+
+
+def analyse_label_space(df: pd.DataFrame, cfg: Config) -> list[FieldStats]:
+    """Run the analysis over every candidate filter field present in the data."""
+    stats = []
+    for field in CANDIDATE_FILTER_FIELDS:
+        if field not in df.columns:
+            log.warning("Field %s absent from catalog, skipping", field)
+            continue
+        stats.append(analyse_field(df, field, cfg))
+    return stats
+
+
+def build_vocabulary(
+    df: pd.DataFrame, cfg: Config, fields: list[str] | None = None
+) -> dict[str, list[str]]:
+    """Build the closed vocabulary offered to the LLM for each filter field.
+
+    Only values occurring at least ``min_value_frequency`` times are included:
+    a long tail of rare values inflates the prompt without being usable as a
+    filter in practice.
+    """
+    fields = fields if fields is not None else cfg.filter_fields
+    vocabulary: dict[str, list[str]] = {}
+    for field in fields:
+        if field not in df.columns:
+            log.warning("Field %s absent from catalog, skipping vocabulary", field)
+            continue
+        counts = df[field].dropna().astype(str).str.strip().value_counts()
+        values = counts[counts >= cfg.min_value_frequency].index.tolist()
+        vocabulary[field] = sorted(values)
+    return vocabulary
+
+
+def save_vocabulary(vocabulary: dict[str, list[str]], cfg: Config) -> Path:
+    cfg.vocabulary_path.write_text(json.dumps(vocabulary, indent=2, ensure_ascii=False))
+    return cfg.vocabulary_path
+
+
+def load_vocabulary(cfg: Config) -> dict[str, list[str]]:
+    if not cfg.vocabulary_path.exists():
+        raise FileNotFoundError(
+            "Filter vocabulary not found. Run `fashion-retrieval label-space` first."
+        )
+    return json.loads(cfg.vocabulary_path.read_text())
+
+
+def stats_to_markdown(stats: list[FieldStats]) -> str:
+    """Render the analysis as a Markdown table, ready to paste into the text."""
+    lines = [
+        "| Field | Distinct | Frequent | Coverage | Usable as hard filter | Reason |",
+        "|---|---|---|---|---|---|",
+    ]
+    for s in stats:
+        lines.append(
+            f"| `{s.field}` | {s.n_distinct} | {s.n_distinct_frequent} | "
+            f"{s.coverage:.1%} | {'yes' if s.usable_as_filter else 'no'} | {s.reason} |"
+        )
+    return "\n".join(lines)
+
+
+def save_report(stats: list[FieldStats], cfg: Config) -> Path:
+    """Write both the Markdown report and its JSON counterpart."""
+    md_path = cfg.results_dir / "label_space_report.md"
+    body = [
+        "# Label-space analysis",
+        "",
+        "Generated by `fashion-retrieval label-space`.",
+        "",
+        stats_to_markdown(stats),
+        "",
+        "## Most frequent values per field",
+        "",
+    ]
+    for s in stats:
+        body.append(f"### `{s.field}`")
+        body.append("")
+        for value, count in s.top_values:
+            body.append(f"- {value}: {count}")
+        body.append("")
+    md_path.write_text("\n".join(body))
+
+    json_path = cfg.results_dir / "label_space_report.json"
+    json_path.write_text(
+        json.dumps([asdict(s) for s in stats], indent=2, ensure_ascii=False)
+    )
+    return md_path
