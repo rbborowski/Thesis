@@ -1,18 +1,4 @@
-"""Command-line interface for the whole pipeline.
 
-Typical run, entirely offline:
-
-    python -m fashion_retrieval prepare
-    python -m fashion_retrieval label-space
-    python -m fashion_retrieval embed
-    python -m fashion_retrieval gen-queries
-    python -m fashion_retrieval evaluate
-    python -m fashion_retrieval search "a black midi dress for a wedding"
-
-Add ``--llm ollama --embeddings sentence-transformers`` to run the real
-configuration used for the reported experiments. Both are free and local: no
-API key, no account, no billing.
-"""
 
 from __future__ import annotations
 
