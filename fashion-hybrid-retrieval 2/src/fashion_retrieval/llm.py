@@ -1,33 +1,4 @@
-"""LLM client abstraction (Section 2.3).
 
-Every backend here is free of charge and free of subscription. No paid API is
-used anywhere in this project.
-
-``ollama`` (recommended for the reported experiments)
-    A local, open-weight model served by Ollama (https://ollama.com), which is
-    free and open source. The model runs on the student's own machine; no
-    account, no key, no billing. Recommended models, in ascending order of
-    cost in hardware: ``qwen2.5:3b-instruct``, ``llama3.1:8b``,
-    ``qwen2.5:7b-instruct``.
-
-``transformers``
-    A local open-weight model loaded directly through Hugging Face
-    ``transformers``. Slower to set up than Ollama and heavier on RAM, but it
-    needs no separate server, which helps on machines where installing Ollama
-    is not possible (some lab computers).
-
-``openai-compatible``
-    Any endpoint exposing the OpenAI chat-completions shape. Included because
-    several free, self-hosted servers (llama.cpp's ``llama-server``, vLLM,
-    LM Studio) speak this protocol. Point it at a local server and it costs
-    nothing. Do NOT point it at a paid vendor for this work.
-
-``mock``
-    A deterministic, rule-based stand-in that returns well-formed JSON. It
-    lets the pipeline, the tests and the evaluation harness run with no model
-    at all. Its extraction quality is deliberately crude; it is a plumbing
-    device, not a system under study, and its numbers must never be reported.
-"""
 
 from __future__ import annotations
 
